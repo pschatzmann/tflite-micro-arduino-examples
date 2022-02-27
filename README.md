@@ -11,11 +11,10 @@ Sync from tflite-micro  | [![Sync from tflite-micro](https://github.com/tensorfl
 
 ## How to Install
 
-### Arduino IDE
+### Corrections
 
-The easiest way to install this library is through the Arduino's library manager.
-In the menus, go to Sketch->Include Library->Manage Libraries. This will pull
-the latest stable version.
+- 
+
 
 ### GitHub
 

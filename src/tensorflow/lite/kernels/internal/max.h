@@ -26,7 +26,7 @@ inline float TfLiteMax(const float& x, const float& y) {
 #else
 template <class T>
 inline T TfLiteMax(const T& x, const T& y) {
-  return std::fmax(x, y);
+  return fmax(x, y);
 }
 #endif
 

@@ -14,14 +14,14 @@ limitations under the License.
 ==============================================================================*/
 
 #include "tensorflow/lite/micro/system_setup.h"
-
+#include "tensorflow/lite/micro/system_ringbuffer.h"
 #include <limits>
-
 #include "tensorflow/lite/micro/debug_log.h"
 
-#if defined(ARDUINO) && !defined(ARDUINO_ARDUINO_NANO33BLE)
-#define ARDUINO_EXCLUDE_CODE
-#endif  // defined(ARDUINO) && !defined(ARDUINO_ARDUINO_NANO33BLE)
+// ps: Commented out: It makes more sense to exclude for defined environments!
+//#if defined(ARDUINO) && !defined(ARDUINO_ARDUINO_NANO33BLE)
+//#define ARDUINO_EXCLUDE_CODE
+//#endif  // defined(ARDUINO) && !defined(ARDUINO_ARDUINO_NANO33BLE)
 
 #ifndef ARDUINO_EXCLUDE_CODE
 
@@ -69,7 +69,8 @@ void SerialChangeBaudRate(const int baud) {
   }
 }
 
-class _RingBuffer : public RingBufferN<kSerialMaxInputLength + 1> {
+
+class _RingBuffer : public tflite::RingBufferN<kSerialMaxInputLength + 1> {
  public:
   bool need_reset = false;
 };
@@ -127,6 +128,7 @@ std::pair<size_t, char*> SerialReadLine(int timeout) {
   return std::make_pair(static_cast<size_t>(_ring_buffer.available() - 1),
                         reinterpret_cast<char*>(_ring_buffer._aucBuffer));
 }
+
 
 // SerialWrite
 // Write the ASCII characters in <buffer> to the default serial port.
