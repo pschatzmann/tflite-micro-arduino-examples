@@ -42,8 +42,8 @@ namespace tflite {
 
 constexpr ulong kSerialMaxInitWait = 4000;  // milliseconds
 
-void InitializeTarget() {
-  DEBUG_SERIAL_OBJECT.begin(9600);
+void InitializeTarget(int baud) {
+  DEBUG_SERIAL_OBJECT.begin(baud);
   ulong start_time = millis();
   while (!DEBUG_SERIAL_OBJECT) {
     // allow for Arduino IDE Serial Monitor synchronization

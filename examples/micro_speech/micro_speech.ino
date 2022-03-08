@@ -51,7 +51,8 @@ int8_t* model_input_buffer = nullptr;
 
 // The name of this function is important for Arduino compatibility.
 void setup() {
-  tflite::InitializeTarget();
+  // initialize Serial 
+  tflite::InitializeTarget(115200);
 
   // Set up logging. Google style is to avoid globals or statics because of
   // lifetime uncertainty, but since this has a trivial destructor it's okay.

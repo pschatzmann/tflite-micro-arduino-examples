@@ -16,6 +16,8 @@ limitations under the License.
 #ifndef TENSORFLOW_LITE_MICRO_EXAMPLES_MICRO_SPEECH_MAIN_FUNCTIONS_H_
 #define TENSORFLOW_LITE_MICRO_EXAMPLES_MICRO_SPEECH_MAIN_FUNCTIONS_H_
 
+#ifndef ESP32
+
 // Expose a C friendly interface for main functions.
 #ifdef __cplusplus
 extern "C" {
@@ -32,6 +34,8 @@ void loop();
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif  // TENSORFLOW_LITE_MICRO_EXAMPLES_MICRO_SPEECH_MAIN_FUNCTIONS_H_

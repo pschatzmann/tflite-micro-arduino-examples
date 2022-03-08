@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#if defined(ARDUINO) && defined(ARDUINO_ARDUINO_NANO33BLE)
+#if defined(ARDUINO) && !defined(ARDUINO_ARDUINO_NANO33BLE)
 #define ARDUINO_EXCLUDE_CODE
 #endif  // defined(ARDUINO) && !defined(ARDUINO_ARDUINO_NANO33BLE)
 
@@ -29,17 +29,60 @@ void RespondToCommand(tflite::ErrorReporter* error_reporter,
                       uint8_t score, bool is_new_command) {
   static bool is_initialized = false;
   if (!is_initialized) {
+    pinMode(LED_BUILTIN, OUTPUT);
+    // Pins for the built-in RGB LEDs on the Arduino Nano 33 BLE Sense
+    pinMode(LEDR, OUTPUT);
+    pinMode(LEDG, OUTPUT);
+    pinMode(LEDB, OUTPUT);
     // Ensure the LED is off by default.
     // Note: The RGB LEDs on the Arduino Nano 33 BLE
     // Sense are on when the pin is LOW, off when HIGH.
+    digitalWrite(LEDR, HIGH);
+    digitalWrite(LEDG, HIGH);
+    digitalWrite(LEDB, HIGH);
     is_initialized = true;
   }
   static int32_t last_command_time = 0;
+  static int count = 0;
 
   if (is_new_command) {
     TF_LITE_REPORT_ERROR(error_reporter, "Heard %s (%d) @%dms", found_command,
                          score, current_time);
+    // If we hear a command, light up the appropriate LED
+    digitalWrite(LEDR, HIGH);
+    digitalWrite(LEDG, HIGH);
+    digitalWrite(LEDB, HIGH);
+
+    if (found_command[0] == 'y') {
+      digitalWrite(LEDG, LOW);  // Green for yes
+    } else if (found_command[0] == 'n') {
+      digitalWrite(LEDR, LOW);  // Red for no
+    } else if (found_command[0] == 'u') {
+      digitalWrite(LEDB, LOW);  // Blue for unknown
+    } else {
+      // silence
+    }
+
     last_command_time = current_time;
+  }
+
+  // If last_command_time is non-zero but was >3 seconds ago, zero it
+  // and switch off the LED.
+  if (last_command_time != 0) {
+    if (last_command_time < (current_time - 3000)) {
+      last_command_time = 0;
+      digitalWrite(LEDR, HIGH);
+      digitalWrite(LEDG, HIGH);
+      digitalWrite(LEDB, HIGH);
+    }
+  }
+
+  // Otherwise, toggle the LED every time an inference is performed.
+  ++count;
+  if (count & 1) {
+    digitalWrite(LED_BUILTIN, HIGH);
+  } else {
+    digitalWrite(LED_BUILTIN, LOW);
   }
 }
 

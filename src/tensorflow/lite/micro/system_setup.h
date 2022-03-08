@@ -23,7 +23,7 @@ namespace tflite {
 // This should called during initialization of TFLM binaries and tests. It can
 // be specialized if there is a need for custom target-specific intialization.
 // For more information, see tensorflow/lite/micro/system_setup.cc.
-void InitializeTarget();
+void InitializeTarget(int baud=9600);
 
 }  // namespace tflite
 
