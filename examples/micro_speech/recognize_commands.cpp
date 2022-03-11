@@ -17,8 +17,6 @@ limitations under the License.
 
 #include <limits>
 
-#undef DEBUG_MICRO_SPEECH
-
 RecognizeCommands::RecognizeCommands(tflite::ErrorReporter* error_reporter,
                                      int32_t average_window_duration_ms,
                                      uint8_t detection_threshold,

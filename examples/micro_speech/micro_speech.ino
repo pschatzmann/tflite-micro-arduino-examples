@@ -13,6 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#define PROFILE_MICRO_SPEECH
+#define DEBUG_MICRO_SPEECH
+
+
 #include <TensorFlowLite.h>
 
 #include "audio_provider.h"
@@ -28,7 +32,6 @@ limitations under the License.
 #include "tensorflow/lite/micro/system_setup.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 
-#undef PROFILE_MICRO_SPEECH
 
 // Globals, used for compatibility with Arduino-style sketches.
 namespace {
@@ -59,6 +62,9 @@ void setup() {
   // NOLINTNEXTLINE(runtime-global-variables)
   static tflite::MicroErrorReporter micro_error_reporter;
   error_reporter = &micro_error_reporter;
+
+  TF_LITE_REPORT_ERROR(error_reporter, "setup - begin");
+
 
   // Map the model into a usable data structure. This doesn't involve any
   // copying or parsing, it's a very lightweight operation.
@@ -136,7 +142,7 @@ void setup() {
     return;
   }
 
-  TF_LITE_REPORT_ERROR(error_reporter, "Initialization complete");
+  TF_LITE_REPORT_ERROR(error_reporter, "setup - end");
 }
 
 // The name of this function is important for Arduino compatibility.
@@ -164,6 +170,9 @@ void loop() {
   if (how_many_new_slices == 0) {
     return;
   }
+
+  // Repport progress
+  TF_LITE_REPORT_ERROR(error_reporter, "processing %d slices...",how_many_new_slices );
 
   // Copy feature buffer to input tensor
   for (int i = 0; i < kFeatureElementCount; i++) {

@@ -32,11 +32,22 @@ void RespondToCommand(tflite::ErrorReporter* error_reporter,
     // Ensure the LED is off by default.
     // Note: The RGB LEDs on the Arduino Nano 33 BLE
     // Sense are on when the pin is LOW, off when HIGH.
+#ifdef LED_BUILTIN
+    pinMode(LED_BUILTIN, OUTPUT);
+#endif
+
     is_initialized = true;
   }
   static int32_t last_command_time = 0;
 
   if (is_new_command) {
+#ifdef LED_BUILTIN
+    if (strcmp(found_command),"yes")==0){
+        digitalWrite(LED_BUILTIN, HIGH);
+    } else {
+        digitalWrite(LED_BUILTIN, LOW);
+    }
+#endif
     TF_LITE_REPORT_ERROR(error_reporter, "Heard %s (%d) @%dms", found_command,
                          score, current_time);
     last_command_time = current_time;
