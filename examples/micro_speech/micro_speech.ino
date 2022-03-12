@@ -172,12 +172,14 @@ void loop() {
   }
 
   // Repport progress
-  TF_LITE_REPORT_ERROR(error_reporter, "processing %d slices...",how_many_new_slices );
+  //TF_LITE_REPORT_ERROR(error_reporter, "processing %d slices...",how_many_new_slices );
 
   // Copy feature buffer to input tensor
-  for (int i = 0; i < kFeatureElementCount; i++) {
-    model_input_buffer[i] = feature_buffer[i];
-  }
+  // for (int i = 0; i < kFeatureElementCount; i++) {
+  //   model_input_buffer[i] = feature_buffer[i];
+  // }
+  memcpy(&model_input_buffer[0], &feature_buffer[0], kFeatureElementCount);
+
 
   // Run the model on the spectrogram input and make sure it succeeds.
   TfLiteStatus invoke_status = interpreter->Invoke();
