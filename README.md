@@ -9,12 +9,13 @@ Build Type          |     Status    |
 Arduino CLI on Linux  | [![Arduino](https://github.com/tensorflow/tflite-micro-arduino-examples/actions/workflows/ci.yml/badge.svg?event=schedule)](https://github.com/tensorflow/tflite-micro-arduino-examples/actions/workflows/ci.yml)
 Sync from tflite-micro  | [![Sync from tflite-micro](https://github.com/tensorflow/tflite-micro-arduino-examples/actions/workflows/sync.yml/badge.svg)](https://github.com/tensorflow/tflite-micro-arduino-examples/actions/workflows/sync.yml)
 
+## Corrections
+
+- Resolve Compile Errors for ESP32
+- Implement audio_provider.cpp for micro_speech exmples based on arduino-audio-tools
+
+
 ## How to Install
-
-### Corrections
-
-- 
-
 
 ### GitHub
 
