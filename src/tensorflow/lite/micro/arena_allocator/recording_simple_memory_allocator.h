@@ -13,11 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef TENSORFLOW_LITE_MICRO_RECORDING_SIMPLE_MEMORY_ALLOCATOR_H_
-#define TENSORFLOW_LITE_MICRO_RECORDING_SIMPLE_MEMORY_ALLOCATOR_H_
+#ifndef TENSORFLOW_LITE_MICRO_ARENA_ALLOCATOR_RECORDING_SIMPLE_MEMORY_ALLOCATOR_H_
+#define TENSORFLOW_LITE_MICRO_ARENA_ALLOCATOR_RECORDING_SIMPLE_MEMORY_ALLOCATOR_H_
 
+#include "tensorflow/lite/micro/arena_allocator/simple_memory_allocator.h"
 #include "tensorflow/lite/micro/compatibility.h"
-#include "tensorflow/lite/micro/simple_memory_allocator.h"
 
 namespace tflite {
 
@@ -47,8 +47,9 @@ class RecordingSimpleMemoryAllocator : public SimpleMemoryAllocator {
   // Returns the number of alloc calls from the head or tail.
   size_t GetAllocatedCount() const;
 
-  TfLiteStatus SetHeadBufferSize(size_t size, size_t alignment) override;
-  uint8_t* AllocateFromTail(size_t size, size_t alignment) override;
+  TfLiteStatus ResizeBuffer(uint8_t* resizable_buf, size_t size,
+                            size_t alignment) override;
+  uint8_t* AllocatePersistentBuffer(size_t size, size_t alignment) override;
 
  private:
   size_t requested_head_bytes_;
@@ -61,4 +62,4 @@ class RecordingSimpleMemoryAllocator : public SimpleMemoryAllocator {
 
 }  // namespace tflite
 
-#endif  // TENSORFLOW_LITE_MICRO_RECORDING_SIMPLE_MEMORY_ALLOCATOR_H_
+#endif  // TENSORFLOW_LITE_MICRO_ARENA_ALLOCATOR_RECORDING_SIMPLE_MEMORY_ALLOCATOR_H_
