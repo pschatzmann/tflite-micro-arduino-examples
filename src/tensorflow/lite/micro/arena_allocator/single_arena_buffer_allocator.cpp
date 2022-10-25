@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "tensorflow/lite/micro/arena_allocator/simple_memory_allocator.h"
+#include "tensorflow/lite/micro/arena_allocator/single_arena_buffer_allocator.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -21,50 +21,45 @@ limitations under the License.
 
 #include "tensorflow/lite/c/c_api_types.h"
 #include "tensorflow/lite/c/common.h"
-#include "tensorflow/lite/core/api/error_reporter.h"
 #include "tensorflow/lite/kernels/internal/compatibility.h"
 #include "tensorflow/lite/kernels/op_macros.h"
 #include "tensorflow/lite/micro/memory_helpers.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
+#include "tensorflow/lite/micro/micro_log.h"
 
 namespace tflite {
 
-SimpleMemoryAllocator::SimpleMemoryAllocator(ErrorReporter* error_reporter,
-                                             uint8_t* buffer_head,
-                                             uint8_t* buffer_tail)
-    : error_reporter_(error_reporter),
-      buffer_head_(buffer_head),
+SingleArenaBufferAllocator::SingleArenaBufferAllocator(uint8_t* buffer_head,
+                                                       uint8_t* buffer_tail)
+    : buffer_head_(buffer_head),
       buffer_tail_(buffer_tail),
       head_(buffer_head),
       tail_(buffer_tail),
       temp_(buffer_head_) {}
 
-SimpleMemoryAllocator::SimpleMemoryAllocator(ErrorReporter* error_reporter,
-                                             uint8_t* buffer,
-                                             size_t buffer_size)
-    : SimpleMemoryAllocator(error_reporter, buffer, buffer + buffer_size) {}
+SingleArenaBufferAllocator::SingleArenaBufferAllocator(uint8_t* buffer,
+                                                       size_t buffer_size)
+    : SingleArenaBufferAllocator(buffer, buffer + buffer_size) {}
 
 /* static */
-SimpleMemoryAllocator* SimpleMemoryAllocator::Create(
-    ErrorReporter* error_reporter, uint8_t* buffer_head, size_t buffer_size) {
-  TFLITE_DCHECK(error_reporter != nullptr);
+SingleArenaBufferAllocator* SingleArenaBufferAllocator::Create(
+    uint8_t* buffer_head, size_t buffer_size) {
   TFLITE_DCHECK(buffer_head != nullptr);
-  SimpleMemoryAllocator tmp =
-      SimpleMemoryAllocator(error_reporter, buffer_head, buffer_size);
+  SingleArenaBufferAllocator tmp =
+      SingleArenaBufferAllocator(buffer_head, buffer_size);
 
-  // Allocate enough bytes from the buffer to create a SimpleMemoryAllocator.
-  // The new instance will use the current adjusted tail buffer from the tmp
-  // allocator instance.
+  // Allocate enough bytes from the buffer to create a
+  // SingleArenaBufferAllocator. The new instance will use the current adjusted
+  // tail buffer from the tmp allocator instance.
   uint8_t* allocator_buffer = tmp.AllocatePersistentBuffer(
-      sizeof(SimpleMemoryAllocator), alignof(SimpleMemoryAllocator));
+      sizeof(SingleArenaBufferAllocator), alignof(SingleArenaBufferAllocator));
   // Use the default copy constructor to populate internal states.
-  return new (allocator_buffer) SimpleMemoryAllocator(tmp);
+  return new (allocator_buffer) SingleArenaBufferAllocator(tmp);
 }
 
-SimpleMemoryAllocator::~SimpleMemoryAllocator() {}
+SingleArenaBufferAllocator::~SingleArenaBufferAllocator() {}
 
-uint8_t* SimpleMemoryAllocator::AllocateResizableBuffer(size_t size,
-                                                        size_t alignment) {
+uint8_t* SingleArenaBufferAllocator::AllocateResizableBuffer(size_t size,
+                                                             size_t alignment) {
   // Only supports one resizable buffer, which starts at the buffer head.
   uint8_t* expect_resizable_buf = AlignPointerUp(buffer_head_, alignment);
   if (ResizeBuffer(expect_resizable_buf, size, alignment) == kTfLiteOk) {
@@ -73,25 +68,24 @@ uint8_t* SimpleMemoryAllocator::AllocateResizableBuffer(size_t size,
   return nullptr;
 }
 
-TfLiteStatus SimpleMemoryAllocator::DeallocateResizableBuffer(
+TfLiteStatus SingleArenaBufferAllocator::DeallocateResizableBuffer(
     uint8_t* resizable_buf) {
   return ResizeBuffer(resizable_buf, 0, 1);
 }
 
-TfLiteStatus SimpleMemoryAllocator::ReserveNonPersistentOverlayMemory(
+TfLiteStatus SingleArenaBufferAllocator::ReserveNonPersistentOverlayMemory(
     size_t size, size_t alignment) {
   uint8_t* expect_resizable_buf = AlignPointerUp(buffer_head_, alignment);
   return ResizeBuffer(expect_resizable_buf, size, alignment);
 }
 
-TfLiteStatus SimpleMemoryAllocator::ResizeBuffer(uint8_t* resizable_buf,
-                                                 size_t size,
-                                                 size_t alignment) {
+TfLiteStatus SingleArenaBufferAllocator::ResizeBuffer(uint8_t* resizable_buf,
+                                                      size_t size,
+                                                      size_t alignment) {
   // Only supports one resizable buffer, which starts at the buffer head.
   uint8_t* expect_resizable_buf = AlignPointerUp(buffer_head_, alignment);
   if (head_ != temp_ || resizable_buf != expect_resizable_buf) {
-    TF_LITE_REPORT_ERROR(
-        error_reporter_,
+    MicroPrintf(
         "Internal error: either buffer is not resizable or "
         "ResetTempAllocations() is not called before ResizeBuffer().");
     return kTfLiteError;
@@ -100,8 +94,7 @@ TfLiteStatus SimpleMemoryAllocator::ResizeBuffer(uint8_t* resizable_buf,
   uint8_t* const aligned_result = AlignPointerUp(buffer_head_, alignment);
   const size_t available_memory = tail_ - aligned_result;
   if (available_memory < size) {
-    TF_LITE_REPORT_ERROR(
-        error_reporter_,
+    MicroPrintf(
         "Failed to resize buffer. Requested: %u, available %u, missing: %u",
         size, available_memory, size - available_memory);
     return kTfLiteError;
@@ -112,16 +105,16 @@ TfLiteStatus SimpleMemoryAllocator::ResizeBuffer(uint8_t* resizable_buf,
   return kTfLiteOk;
 }
 
-uint8_t* SimpleMemoryAllocator::AllocatePersistentBuffer(size_t size,
-                                                         size_t alignment) {
+uint8_t* SingleArenaBufferAllocator::AllocatePersistentBuffer(
+    size_t size, size_t alignment) {
   uint8_t* const aligned_result = AlignPointerDown(tail_ - size, alignment);
   if (aligned_result < head_) {
 #ifndef TF_LITE_STRIP_ERROR_STRINGS
     const size_t missing_memory = head_ - aligned_result;
-    TF_LITE_REPORT_ERROR(error_reporter_,
-                         "Failed to allocate tail memory. Requested: %u, "
-                         "available %u, missing: %u",
-                         size, size - missing_memory, missing_memory);
+    MicroPrintf(
+        "Failed to allocate tail memory. Requested: %u, "
+        "available %u, missing: %u",
+        size, size - missing_memory, missing_memory);
 #endif
     return nullptr;
   }
@@ -129,14 +122,15 @@ uint8_t* SimpleMemoryAllocator::AllocatePersistentBuffer(size_t size,
   return aligned_result;
 }
 
-uint8_t* SimpleMemoryAllocator::AllocateTemp(size_t size, size_t alignment) {
+uint8_t* SingleArenaBufferAllocator::AllocateTemp(size_t size,
+                                                  size_t alignment) {
   uint8_t* const aligned_result = AlignPointerUp(temp_, alignment);
   const size_t available_memory = tail_ - aligned_result;
   if (available_memory < size) {
-    TF_LITE_REPORT_ERROR(error_reporter_,
-                         "Failed to allocate temp memory. Requested: %u, "
-                         "available %u, missing: %u",
-                         size, available_memory, size - available_memory);
+    MicroPrintf(
+        "Failed to allocate temp memory. Requested: %u, "
+        "available %u, missing: %u",
+        size, available_memory, size - available_memory);
     return nullptr;
   }
   temp_ = aligned_result + size;
@@ -145,12 +139,12 @@ uint8_t* SimpleMemoryAllocator::AllocateTemp(size_t size, size_t alignment) {
   return aligned_result;
 }
 
-void SimpleMemoryAllocator::DeallocateTemp(uint8_t* temp_buf) {
+void SingleArenaBufferAllocator::DeallocateTemp(uint8_t* temp_buf) {
   temp_buffer_ptr_check_sum_ ^= (reinterpret_cast<intptr_t>(temp_buf));
   temp_buffer_count_--;
 }
 
-bool SimpleMemoryAllocator::IsAllTempDeallocated() {
+bool SingleArenaBufferAllocator::IsAllTempDeallocated() {
   if (temp_buffer_count_ != 0 || temp_buffer_ptr_check_sum_ != 0) {
     MicroPrintf(
         "Number of allocated temp buffers: %d. Checksum passing status: %d",
@@ -160,7 +154,7 @@ bool SimpleMemoryAllocator::IsAllTempDeallocated() {
   return true;
 }
 
-TfLiteStatus SimpleMemoryAllocator::ResetTempAllocations() {
+TfLiteStatus SingleArenaBufferAllocator::ResetTempAllocations() {
   // TODO(b/209453859): enable error check based on IsAllTempDeallocated after
   // all AllocateTemp have been paird with DeallocateTemp
   if (!IsAllTempDeallocated()) {
@@ -172,34 +166,34 @@ TfLiteStatus SimpleMemoryAllocator::ResetTempAllocations() {
   return kTfLiteOk;
 }
 
-uint8_t* SimpleMemoryAllocator::GetOverlayMemoryAddress() const {
+uint8_t* SingleArenaBufferAllocator::GetOverlayMemoryAddress() const {
   return buffer_head_;
 }
 
-size_t SimpleMemoryAllocator::GetNonPersistentUsedBytes() const {
+size_t SingleArenaBufferAllocator::GetNonPersistentUsedBytes() const {
   return std::max(head_ - buffer_head_, temp_ - buffer_head_);
 }
 
-size_t SimpleMemoryAllocator::GetPersistentUsedBytes() const {
+size_t SingleArenaBufferAllocator::GetPersistentUsedBytes() const {
   return buffer_tail_ - tail_;
 }
 
-size_t SimpleMemoryAllocator::GetAvailableMemory(size_t alignment) const {
+size_t SingleArenaBufferAllocator::GetAvailableMemory(size_t alignment) const {
   uint8_t* const aligned_temp = AlignPointerUp(temp_, alignment);
   uint8_t* const aligned_tail = AlignPointerDown(tail_, alignment);
   return aligned_tail - aligned_temp;
 }
 
-size_t SimpleMemoryAllocator::GetUsedBytes() const {
+size_t SingleArenaBufferAllocator::GetUsedBytes() const {
   return GetPersistentUsedBytes() + GetNonPersistentUsedBytes();
 }
 
-size_t SimpleMemoryAllocator::GetBufferSize() const {
+size_t SingleArenaBufferAllocator::GetBufferSize() const {
   return buffer_tail_ - buffer_head_;
 }
 
-uint8_t* SimpleMemoryAllocator::head() const { return head_; }
+uint8_t* SingleArenaBufferAllocator::head() const { return head_; }
 
-uint8_t* SimpleMemoryAllocator::tail() const { return tail_; }
+uint8_t* SingleArenaBufferAllocator::tail() const { return tail_; }
 
 }  // namespace tflite
