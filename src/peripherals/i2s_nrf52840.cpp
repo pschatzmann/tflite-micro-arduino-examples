@@ -12,9 +12,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-
 #undef I2S_NRF52840_DEBUG
 #undef I2S_NRF52840_DEBUG_INT
+
+#include "peripherals.h"
+#ifdef USE_NRF52840
 
 #include "i2s_nrf52840.h"
 
@@ -25,7 +27,6 @@ limitations under the License.
 #include <cstring>
 #include <type_traits>
 
-#include "peripherals.h"
 
 namespace peripherals {
 
@@ -784,3 +785,4 @@ bool I2S_nrf52840::SameBufferSegment(const uint8_t* a, const uint8_t* b) const {
 }
 
 }  // namespace peripherals
+#endif

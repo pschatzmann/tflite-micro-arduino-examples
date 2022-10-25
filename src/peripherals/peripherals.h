@@ -28,6 +28,10 @@ limitations under the License.
 #ifdef ARDUINO
 
 #if defined(ARDUINO_ARDUINO_NANO33BLE)
+#define USE_BUTTON
+#define USE_LED
+#define USE_NRF52840
+#define USE_I2C_ARDUINO
 #include <cstdint>
 
 #include "button.h"
@@ -52,7 +56,12 @@ constexpr pin_size_t kBUTTON_GPIO = D8;
 constexpr pin_size_t kLED_DEFAULT_GPIO = D13;
 
 }  // namespace peripherals
-
+#elif defined(ESP32)
+// allow esp32!
+#ifdef LED_BUILTIN
+#define USE_LED
+#define kLED_DEFAULT_GPIO LED_BUILTIN
+#endif
 #else  // ARDUINO_ARDUINO_NANO33BLE
 #error "unsupported board"
 

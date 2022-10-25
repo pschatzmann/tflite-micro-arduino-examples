@@ -20,7 +20,8 @@ limitations under the License.
 #include <Wire.h>
 
 #include "i2c.h"
-
+#include "peripherals.h"
+#ifdef USE_I2C_ARDUINO
 namespace peripherals {
 
 class I2C_Arduino : public I2C {
@@ -43,3 +44,5 @@ class I2C_Arduino : public I2C {
 }  // namespace peripherals
 
 #endif  // PERIPHERALS_I2C_ARDUINO_H_
+
+#endif

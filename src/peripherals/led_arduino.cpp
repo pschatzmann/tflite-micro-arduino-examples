@@ -12,13 +12,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-
 #include <Arduino.h>
 
 #include <cstdint>
 
-#include "led.h"
 #include "peripherals.h"
+#ifdef USE_LED
+#include "led.h"
 #include "utility.h"
 
 namespace peripherals {
@@ -100,3 +100,4 @@ class LED_Arduino : LED {
 LED& LED::Instance() { return LED_Arduino::Instance(); }
 
 }  // namespace peripherals
+#endif
