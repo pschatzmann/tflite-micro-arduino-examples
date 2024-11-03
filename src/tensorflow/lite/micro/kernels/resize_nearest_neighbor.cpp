@@ -1,4 +1,4 @@
-/* Copyright 2017 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2023 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,12 +21,11 @@ limitations under the License.
 #include "tensorflow/lite/kernels/kernel_util.h"
 #include "tensorflow/lite/kernels/op_macros.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
+#include "tensorflow/lite/micro/micro_log.h"
 
 namespace tflite {
-namespace ops {
-namespace micro {
-namespace resize_nearest_neighbor {
+
+namespace {
 
 constexpr int kInputTensor = 0;
 constexpr int kSizeTensor = 1;
@@ -55,7 +54,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   output->type = input->type;
 
   if (!IsConstantTensor(size)) {
-    TF_LITE_KERNEL_LOG(context, "Dynamic tensors are unsupported in tfmicro.");
+    MicroPrintf("Dynamic tensors are unsupported in tfmicro.");
     return kTfLiteError;
   }
 
@@ -114,19 +113,11 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
   return kTfLiteOk;
 }
-}  // namespace resize_nearest_neighbor
+
+}  // namespace
 
 TfLiteRegistration Register_RESIZE_NEAREST_NEIGHBOR() {
-  return {/*init=*/nullptr,
-          /*free=*/nullptr,
-          /*prepare=*/resize_nearest_neighbor::Prepare,
-          /*invoke=*/resize_nearest_neighbor::Eval,
-          /*profiling_string=*/nullptr,
-          /*builtin_code=*/0,
-          /*custom_name=*/nullptr,
-          /*version=*/0};
+  return tflite::micro::RegisterOp(nullptr, Prepare, Eval);
 }
 
-}  // namespace micro
-}  // namespace ops
 }  // namespace tflite
