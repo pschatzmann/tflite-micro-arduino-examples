@@ -1,4 +1,4 @@
-/* Copyright 2018 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ limitations under the License.
 #include <cmath>
 #include "audio_provider.h"
 #include "micro_features_micro_model_settings.h"
+#include "tensorflow/lite/micro/micro_log.h"
 #include "test_over_serial/test_over_serial.h"
 #include "AudioTools.h"
 #include "AudioLibs/AudioKit.h"
