@@ -31,13 +31,42 @@ limitations under the License.
 AudioKitStream i2s;
 bool g_is_audio_initialized = false;
 int16_t g_audio_output_buffer[kMaxAudioSampleSize];
-int32_t g_latest_audio_timestamp = 0;
-tflite::ErrorReporter* g_error_reporter;
+// Mark as volatile so we can check in a while loop to see if
+// any samples have arrived yet.
+volatile int32_t g_latest_audio_timestamp = 0;
+// test_over_serial sample index
+uint32_t g_test_sample_index;
+// test_over_serial silence insertion flag
+bool g_test_insert_silence = true;
+}  // namespace
 
-/// Setup I2S
-TfLiteStatus InitAudioRecording(tflite::ErrorReporter* error_reporter) {
-  AudioLogger::instance().begin(Serial, AudioLogger::Info);
+void CaptureSamples() {
+  // This is how many bytes of new data we have each time this is called
+  const int number_of_samples = DEFAULT_PDM_BUFFER_SIZE / 2;
+  // Calculate what timestamp the last audio sample represents
+  const int32_t time_in_ms =
+      g_latest_audio_timestamp +
+      (number_of_samples / (kAudioSampleFrequency / 1000));
+  // Determine the index, in the history of all samples, of the last sample
+  const int32_t start_sample_offset =
+      g_latest_audio_timestamp * (kAudioSampleFrequency / 1000);
+  // Determine the index of this sample in our ring buffer
+  const int capture_index = start_sample_offset % kAudioCaptureBufferSize;
+  // Read the data to the correct place in our buffer
+  int num_read =
+      PDM.read(g_audio_capture_buffer + capture_index, DEFAULT_PDM_BUFFER_SIZE);
+  if (num_read != DEFAULT_PDM_BUFFER_SIZE) {
+    MicroPrintf("### short read (%d/%d) @%dms", num_read,
+                DEFAULT_PDM_BUFFER_SIZE, time_in_ms);
+    while (true) {
+      // NORETURN
+    }
+  }
+  // This is how we let the outside world know that new audio data has arrived.
+  g_latest_audio_timestamp = time_in_ms;
+}
 
+TfLiteStatus InitAudioRecording() {
   if (!g_is_audio_initialized) {
     g_error_reporter = error_reporter;
     // Start listening for audio: MONO @ 16KHz
