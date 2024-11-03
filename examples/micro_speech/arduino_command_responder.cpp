@@ -1,4 +1,4 @@
-/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ limitations under the License.
 
 #include "Arduino.h"
 #include "command_responder.h"
+#include "tensorflow/lite/micro/micro_log.h"
 
 // Toggles the built-in LED every inference, and lights a colored LED depending
 // on which word was detected.
-void RespondToCommand(tflite::ErrorReporter* error_reporter,
-                      int32_t current_time, const char* found_command,
+void RespondToCommand(int32_t current_time, const char* found_command,
                       uint8_t score, bool is_new_command) {
   static bool is_initialized = false;
   if (!is_initialized) {
@@ -41,15 +41,22 @@ void RespondToCommand(tflite::ErrorReporter* error_reporter,
   static int32_t last_command_time = 0;
 
   if (is_new_command) {
-#ifdef LED_BUILTIN
-    if (strcmp(found_command),"yes")==0){
-        digitalWrite(LED_BUILTIN, HIGH);
+    MicroPrintf("Heard %s (%d) @%dms", found_command, score, current_time);
+    // If we hear a command, light up the appropriate LED
+    digitalWrite(LEDR, HIGH);
+    digitalWrite(LEDG, HIGH);
+    digitalWrite(LEDB, HIGH);
+
+    if (found_command[0] == 'y') {
+      digitalWrite(LEDG, LOW);  // Green for yes
+    } else if (found_command[0] == 'n') {
+      digitalWrite(LEDR, LOW);  // Red for no
+    } else if (found_command[0] == 'u') {
+      digitalWrite(LEDB, LOW);  // Blue for unknown
     } else {
-        digitalWrite(LED_BUILTIN, LOW);
+      // silence
     }
-#endif
-    TF_LITE_REPORT_ERROR(error_reporter, "Heard %s (%d) @%dms", found_command,
-                         score, current_time);
+
     last_command_time = current_time;
   }
 }
